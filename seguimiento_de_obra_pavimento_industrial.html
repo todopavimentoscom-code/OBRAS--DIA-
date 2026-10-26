@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResinControl Pro - Pavimentos Industriales</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                            800: '#9a3412',
+                            900: '#7c2d12',
+                        },
+                        darkbg: '#0f172a',
+                        darkcard: '#1e293b',
+                        darkborder: '#334155'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .touch-manipulate {
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        @media print {
+            body { background: white; color: black; }
+            header, nav, .no-print, footer, button, #overlay-login { display: none !important; }
+            #sec-resumen, #parte-imprimible { display: block !important; border: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between touch-manipulate pb-20 md:pb-0">
+
+    <!-- PANTALLA DE IDENTIFICACIÓN / LOGIN INICIAL (BLOQUEO CRUZADO) -->
+    <div id="overlay-login" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl text-center">
+            <div class="bg-gradient-to-tr from-orange-600 to-amber-500 w-16 h-16 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-orange-500/20">
+                <i class="fa-solid fa-user-shield text-white text-3xl"></i>
+            </div>
+            
+            <div>
+                <h2 class="text-2xl font-black text-white tracking-tight">¿Quién entra hoy?</h2>
+                <p class="text-xs text-slate-400 mt-1">Selecciona tu usuario para poder registrar tu trabajo y rellenar el parte</p>
+            </div>
+
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-orange-400 mb-1">Tu Nombre de Aplicador / Responsable</label>
+                    <select id="select-usuario-login" class="w-full bg-slate-950 text-white font-semibold px-4 py-3.5 rounded-xl border border-slate-700 outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                        <!-- Cargado dinámicamente -->
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="confirmarIdentidad()" class="w-full py-4 bg-orange-600 hover:bg-orange-500 active:bg-orange-700 text-white font-extrabold rounded-xl shadow-xl flex items-center justify-center space-x-2 text-base transition touch-manipulate">
+                <i class="fa-solid fa-arrow-right-to-bracket text-lg"></i>
+                <span>ENTRAR AL PARTE DE OBRA</span>
+            </button>
+
+            <p class="text-[11px] text-slate-500 italic">Esta selección evita modificaciones no autorizadas entre compañeros.</p>
+        </div>
+    </div>
+
+    <!-- HEADER / BARRA SUPERIOR -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 px-4 py-3 shadow-lg">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-orange-600 to-amber-500 p-2.5 rounded-xl shadow-md flex items-center justify-center">
+                    <i class="fa-solid fa-layer-group text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg md:text-xl tracking-tight leading-tight text-slate-100">
+                        Resin<span class="text-orange-500">Control</span> Pro
+                    </h1>
+                    <p class="text-xs text-slate-400 font-medium hidden sm:block">Pavimentos Industriales & Resinas</p>
+                </div>
+            </div>
+
+            <!-- Datos rápidos de la obra actual & Usuario activo -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="cambiarUsuarioModal()" id="btn-user-badge" class="h-10 px-3 bg-slate-800 hover:bg-slate-700 border border-orange-500/30 rounded-xl flex items-center space-x-2 text-orange-400 text-xs font-bold transition">
+                    <i class="fa-solid fa-user-circle text-base"></i>
+                    <span id="lbl-usuario-actual" class="max-w-[100px] truncate">Juan Pérez</span>
+                </button>
+                <button onclick="abrirModalCompartir()" title="Instalar y Compartir con Operarios" class="h-10 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex items-center space-x-2 text-slate-200 text-xs font-bold transition">
+                    <i class="fa-solid fa-share-nodes text-orange-400 text-base"></i>
+                    <span class="hidden md:inline">Compartir App</span>
+                </button>
+                <button onclick="abrirModalCoordinadores()" title="Configurar 2 Coordinadores / Dirección" class="h-10 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex items-center space-x-2 text-slate-200 text-xs font-bold transition">
+                    <i class="fa-solid fa-user-shield text-emerald-400 text-base"></i>
+                    <span class="hidden md:inline">Config. Coordinadores</span>
+                </button>
+                <select id="select-obra" onchange="cambiarObra(this.value)" class="bg-slate-800 text-orange-400 text-xs sm:text-sm font-bold border border-slate-700 rounded-lg px-2 py-2 focus:ring-2 focus:ring-orange-500 outline-none">
+                    <option value="Nave Logística Central">Nave Logística Central</option>
+                    <option value="Planta Farma - Sala Limpia">Planta Farma - Sala Limpia</option>
+                    <option value="Parking Subterráneo N2">Parking Subterráneo N2</option>
+                    <option value="+ Nueva Obra">+ Crear Nueva Obra</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="max-w-7xl mx-auto w-full px-4 py-4 flex-grow">
+
+        <!-- NAVEGACIÓN PRINCIPAL -->
+        <nav class="flex rounded-2xl bg-slate-900 p-1.5 border border-slate-800 mb-6 shadow-inner text-sm font-semibold">
+            <button onclick="cambiarPestana('asistencia')" id="nav-asistencia" class="tab-btn flex-1 py-3 px-2 rounded-xl flex items-center justify-center space-x-2 transition-all bg-orange-600 text-white shadow-md">
+                <i class="fa-solid fa-users text-lg"></i>
+                <span class="hidden sm:inline">1. Asistencia</span>
+                <span class="sm:hidden text-xs">Equipo</span>
+            </button>
+            <button onclick="cambiarPestana('avance')" id="nav-avance" class="tab-btn flex-1 py-3 px-2 rounded-xl flex items-center justify-center space-x-2 text-slate-400 hover:text-white transition-all">
+                <i class="fa-solid fa-ruler-combined text-lg"></i>
+                <span class="hidden sm:inline">2. Avance & Sistema</span>
+                <span class="sm:hidden text-xs">Avance</span>
+            </button>
+            <button onclick="cambiarPestana('materiales')" id="nav-materiales" class="tab-btn flex-1 py-3 px-2 rounded-xl flex items-center justify-center space-x-2 text-slate-400 hover:text-white transition-all">
+                <i class="fa-solid fa-boxes-stacked text-lg"></i>
+                <span class="hidden sm:inline">3. Materiales</span>
+                <span class="sm:hidden text-xs">Materiales</span>
+            </button>
+            <button onclick="cambiarPestana('resumen')" id="nav-resumen" class="tab-btn flex-1 py-3 px-2 rounded-xl flex items-center justify-center space-x-2 text-slate-400 hover:text-white transition-all">
+                <i class="fa-solid fa-paper-plane text-lg"></i>
+                <span class="hidden sm:inline">4. Enviar Parte</span>
+                <span class="sm:hidden text-xs">Parte</span>
+            </button>
+        </nav>
+
+        <!-- SECCIÓN 1: FICHAJE Y ASISTENCIA -->
+        <section id="sec-asistencia" class="space-y-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-user-check text-orange-500"></i> Registro de Asistencia de Cuadrilla
+                    </h2>
+                    <p class="text-xs text-slate-400">Pulsa los botones táctiles para marcar presencia, horas o vacaciones</p>
+                </div>
+                <button onclick="agregarOperarioModal()" class="w-full sm:w-auto h-11 px-4 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-orange-400 font-semibold rounded-xl border border-slate-700 flex items-center justify-center space-x-2 text-sm transition">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>+ Añadir Trabajador</span>
+                </button>
+            </div>
+
+            <!-- TARJETAS DE OPERARIOS -->
+            <div id="grid-operarios" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Se llena dinámicamente -->
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: AVANCE DE SISTEMA Y CAPA -->
+        <section id="sec-avance" class="space-y-4 hidden">
+            
+            <!-- MARCAR OBRA COMO TERMINADA (BOTÓN TÁCTIL DESTACADO) -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="flex items-center space-x-3">
+                    <div id="status-obra-badge" class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl font-bold">
+                        <i class="fa-solid fa-person-digging"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Estado de Obra</span>
+                            <span id="txt-estado-obra" class="text-xs font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">EN EJECUCIÓN</span>
+                        </div>
+                        <h3 class="text-base font-extrabold text-white" id="title-obra-estado">Nave Logística Central</h3>
+                    </div>
+                </div>
+
+                <button onclick="toggleObraTerminada()" id="btn-finalizar-obra" class="w-full sm:w-auto px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold rounded-xl shadow-lg flex items-center justify-center space-x-2 text-sm transition touch-manipulate">
+                    <i class="fa-solid fa-flag-checkered text-lg"></i>
+                    <span id="lbl-btn-finalizar">MARCAR OBRA COMO TERMINADA</span>
+                </button>
+            </div>
+
+            <!-- Selección de Sistema de Resina -->
+            <div class="bg-slate-900 p-4 md:p-5 rounded-2xl border border-slate-800 space-y-3">
+                <label class="block text-xs font-extrabold text-orange-400 uppercase tracking-wider">Sistema de Pavimento Industrial Aplicado</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5" id="selector-sistemas">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+
+            <!-- Selección de Capa -->
+            <div class="bg-slate-900 p-4 md:p-5 rounded-2xl border border-slate-800 space-y-3">
+                <label class="block text-xs font-extrabold text-orange-400 uppercase tracking-wider">Fase / Capa Ejecutada Hoy</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5" id="selector-capas">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+
+            <!-- Datos de Metros Cuadrados -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4 lg:col-span-2">
+                    <h3 class="text-md font-bold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-ruler-square text-orange-500"></i> Metros Cuadrados ($m^2$)
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Planificado Hoy ($m^2$)</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" id="m2-plan" value="450" oninput="calcularProgresoAvance()" class="w-full bg-slate-900 text-2xl font-black text-white px-3 py-2 rounded-lg border border-slate-700 focus:ring-2 focus:ring-orange-500 outline-none">
+                                <span class="text-slate-400 font-bold">$m^2$</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Realizado Hoy ($m^2$)</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" id="m2-ejec" value="420" oninput="calcularProgresoAvance()" class="w-full bg-slate-900 text-2xl font-black text-orange-400 px-3 py-2 rounded-lg border border-slate-700 focus:ring-2 focus:ring-orange-500 outline-none">
+                                <span class="text-slate-400 font-bold">$m^2$</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Indicador de Cumplimiento -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-400 font-medium">Cumplimiento del Planning Diario:</span>
+                            <span id="txt-cumplimiento-pct" class="font-black text-emerald-400 text-lg">93.3%</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-4 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                            <div id="bar-cumplimiento" class="bg-gradient-to-r from-orange-500 to-emerald-500 h-full rounded-full transition-all duration-500" style="width: 93.3%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen Global -->
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4">
+                    <div>
+                        <h3 class="text-md font-bold text-slate-200 mb-1">Total Proyecto</h3>
+                        <p class="text-xs text-slate-400">Total Obra Contratada: <span id="txt-total-obra-m2" class="font-bold text-white">2.500 $m^2$</span></p>
+                    </div>
+
+                    <div class="text-center py-2">
+                        <div class="inline-flex flex-col items-center justify-center w-32 h-32 rounded-full border-4 border-orange-500/30 bg-slate-950 relative">
+                            <span id="txt-obra-total-pct" class="text-3xl font-black text-white">65%</span>
+                            <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Avanzado</span>
+                        </div>
+                    </div>
+
+                    <div class="text-xs text-slate-400 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <i class="fa-solid fa-circle-info text-orange-400 mr-1"></i> Estado: <b id="lbl-estado-info" class="text-white">En Progreso Normal</b>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 3: CONSUMO DE MATERIALES -->
+        <section id="sec-materiales" class="space-y-4 hidden">
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-boxes-stacked text-orange-500"></i> Materiales de Resina y Cargas Gastados
+                    </h2>
+                    <p class="text-xs text-slate-400">Control directo de consumos e inspección de dosificación ($kg/m^2$)</p>
+                </div>
+                <div class="bg-orange-500/10 border border-orange-500/30 px-3 py-1.5 rounded-xl text-xs text-orange-400 font-semibold flex items-center gap-2">
+                    <i class="fa-solid fa-calculator"></i>
+                    <span>Base cálculo: <strong id="lbl-m2-materiales">420</strong> $m^2$</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="grid-materiales">
+                <!-- Dinámico -->
+            </div>
+        </section>
+
+        <!-- SECCIÓN 4: PARTE DIARIO Y ENVÍO A 2 COORDINADORES -->
+        <section id="sec-resumen" class="space-y-4 hidden">
+
+            <!-- ALERTA COORDINADORES CONFIGURADOS -->
+            <div class="bg-gradient-to-r from-orange-950/60 to-slate-900 p-4 rounded-2xl border border-orange-500/30 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-paper-plane text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-white">Coordinadores Destinatarios Predefinidos</h4>
+                        <p class="text-xs text-slate-300" id="txt-coordinadores-config-resumen">Coordinador 1: Miguel Ángel | Coordinador 2: Roberto Ruiz</p>
+                    </div>
+                </div>
+                <button onclick="abrirModalCoordinadores()" class="text-xs bg-slate-800 hover:bg-slate-700 text-orange-400 font-bold px-3 py-2 rounded-lg border border-slate-700">
+                    Cambiar Coordinadores
+                </button>
+            </div>
+
+            <!-- Observaciones del Día -->
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-clipboard-list text-orange-500"></i> Observaciones & Datos de Secado
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Temp. Ambiente (°C)</label>
+                        <input type="number" id="env-temp" value="22" class="w-full bg-slate-900 text-lg font-bold text-white px-3 py-1.5 rounded-lg border border-slate-700 outline-none">
+                    </div>
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Humedad Ambiente (%)</label>
+                        <input type="number" id="env-hum" value="50" class="w-full bg-slate-900 text-lg font-bold text-white px-3 py-1.5 rounded-lg border border-slate-700 outline-none">
+                    </div>
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Humedad Solera (%)</label>
+                        <input type="number" id="env-solera-hum" value="3.5" step="0.1" class="w-full bg-slate-900 text-lg font-bold text-white px-3 py-1.5 rounded-lg border border-slate-700 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Incidencias / Notas de Obra</label>
+                    <textarea id="txt-observaciones" rows="3" placeholder="Masillado de juntas completado. Granallado limpio sin polvo..." class="w-full bg-slate-950 text-slate-200 text-sm p-3 rounded-xl border border-slate-800 focus:ring-2 focus:ring-orange-500 outline-none"></textarea>
+                </div>
+            </div>
+
+            <!-- PARTE VISUAL PARA ENVIAR -->
+            <div id="parte-imprimible" class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-6">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div>
+                        <span class="bg-orange-500/20 text-orange-400 text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">Parte Diario de Pavimentación</span>
+                        <h3 class="text-xl font-black text-white mt-1" id="resumen-titulo-obra">Nave Logística Central</h3>
+                        <p class="text-xs text-slate-400" id="resumen-fecha">Fecha: --/--/----</p>
+                        <p class="text-xs text-orange-400 font-semibold mt-1">Registrado por: <span id="resumen-emisor-nombre" class="text-white font-bold">Juan Pérez</span></p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400 block">Sistema & Capa:</span>
+                        <span id="resumen-sistema-nombre" class="text-sm font-extrabold text-white block">Multicapa Epoxy Monocolor</span>
+                        <span id="resumen-capa-nombre" class="text-xs font-bold text-orange-400">Imprimación Epoxi</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <h4 class="text-xs uppercase font-bold text-slate-500 mb-2">Cuadrilla Trabajadores</h4>
+                        <div id="resumen-asistencia-lista" class="space-y-1 text-xs text-slate-300"></div>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <h4 class="text-xs uppercase font-bold text-slate-500 mb-2">Rendimiento $m^2$</h4>
+                        <p class="text-2xl font-black text-white" id="resumen-m2-ejec">420 $m^2$</p>
+                        <p class="text-xs text-slate-400 mt-1">Objetivo: <span id="resumen-m2-plan">450 $m^2$</span></p>
+                        <p class="text-xs font-bold text-emerald-400 mt-1" id="resumen-pct-cump">Cumplimiento: 93.3%</p>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <h4 class="text-xs uppercase font-bold text-slate-500 mb-2">Consumo Resinas</h4>
+                        <div id="resumen-materiales-lista" class="space-y-1 text-xs text-slate-300"></div>
+                    </div>
+                </div>
+
+                <!-- BOTONES ACCIÓN PRINCIPALES - ENVÍO AUTOMÁTICO A 2 COORDINADORES -->
+                <div class="space-y-3 pt-2">
+                    <!-- BOTÓN GIGANTE DE ENVÍO DIRECTO SIN ELEGIR A QUIÉN -->
+                    <button onclick="enviarReporteA2CoordinadoresWhatsApp()" class="w-full py-4 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold rounded-2xl shadow-xl flex items-center justify-center space-x-3 text-base transition touch-manipulate">
+                        <i class="fa-brands fa-whatsapp text-2xl"></i>
+                        <span>ENVIAR REPORTE POR WHATSAPP A LOS 2 COORDINADORES</span>
+                    </button>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button onclick="enviarReporteEmail()" class="py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 flex items-center justify-center space-x-2 text-sm transition">
+                            <i class="fa-solid fa-envelope text-blue-400"></i>
+                            <span>Enviar por Correo</span>
+                        </button>
+                        <button onclick="guardarParteDiario()" class="py-3.5 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl shadow-md flex items-center justify-center space-x-2 text-sm transition">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>Guardar en Historial</span>
+                        </button>
+                        <button onclick="imprimirParte()" class="py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 flex items-center justify-center space-x-2 text-sm transition">
+                            <i class="fa-solid fa-print"></i>
+                            <span>Imprimir / PDF</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HISTORIAL -->
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-md font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-orange-500"></i> Historial de Guardados
+                    </h3>
+                    <span id="badge-total-partes" class="bg-slate-800 text-xs font-semibold px-2.5 py-1 rounded-lg text-slate-400 border border-slate-700">0 Registros</span>
+                </div>
+                <div id="lista-historial-partes" class="space-y-3"></div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER NAVEGACIÓN MÓVIL TÁCTIL (BOTTOM BAR) -->
+    <div class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 p-2 md:hidden z-30">
+        <div class="grid grid-cols-4 gap-1 text-center">
+            <button onclick="cambiarPestana('asistencia')" id="bnav-asistencia" class="py-2 flex flex-col items-center text-orange-500">
+                <i class="fa-solid fa-users text-lg"></i>
+                <span class="text-[10px] font-bold mt-0.5">Equipo</span>
+            </button>
+            <button onclick="cambiarPestana('avance')" id="bnav-avance" class="py-2 flex flex-col items-center text-slate-400">
+                <i class="fa-solid fa-ruler-combined text-lg"></i>
+                <span class="text-[10px] font-bold mt-0.5">Avance</span>
+            </button>
+            <button onclick="cambiarPestana('materiales')" id="bnav-materiales" class="py-2 flex flex-col items-center text-slate-400">
+                <i class="fa-solid fa-boxes-stacked text-lg"></i>
+                <span class="text-[10px] font-bold mt-0.5">Resinas</span>
+            </button>
+            <button onclick="cambiarPestana('resumen')" id="bnav-resumen" class="py-2 flex flex-col items-center text-slate-400">
+                <i class="fa-solid fa-paper-plane text-lg"></i>
+                <span class="text-[10px] font-bold mt-0.5">Enviar</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 1: AÑADIR TRABAJADOR -->
+    <div id="modal-operario" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-lg">Añadir Nuevo Trabajador</h3>
+                <button onclick="cerrarOperarioModal()" class="text-slate-400 hover:text-white text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Nombre Completo</label>
+                    <input type="text" id="nuevo-op-nombre" placeholder="Ej: Carlos Gómez" class="w-full bg-slate-950 text-white px-4 py-3 rounded-xl border border-slate-800 outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Especialidad / Rol</label>
+                    <select id="nuevo-op-rol" class="w-full bg-slate-950 text-white px-4 py-3 rounded-xl border border-slate-800 outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="Oficial Maquinista / Granallado">Oficial Maquinista / Granallado</option>
+                        <option value="Oficial Resinero / Rodillo">Oficial Resinero / Rodillo</option>
+                        <option value="Aplicador Autonivelante / Llana">Aplicador Autonivelante / Llana</option>
+                        <option value="Peón de Mezcla y Apoyo">Peón de Mezcla y Apoyo</option>
+                        <option value="Encargado de Obra">Encargado de Obra</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button onclick="cerrarOperarioModal()" class="flex-1 py-3 bg-slate-800 text-slate-300 font-bold rounded-xl border border-slate-700">Cancelar</button>
+                <button onclick="guardarNuevoOperario()" class="flex-1 py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl shadow-md">Añadir Operario</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: CONFIGURACIÓN DE LOS 2 COORDINADORES -->
+    <div id="modal-coordinadores" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-user-shield text-emerald-400"></i> Configurar los 2 Coordinadores / Oficina
+                </h3>
+                <button onclick="cerrarModalCoordinadores()" class="text-slate-400 hover:text-white text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-400">Guarda una vez los teléfonos y correos de tus dos coordinadores. Los operarios solo tendrán que pulsar "Enviar" y les llegará automáticamente.</p>
+            
+            <!-- Coordinador 1 -->
+            <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                <h4 class="text-xs font-bold text-orange-400 uppercase">Coordinador 1</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input type="text" id="coord1-nombre" placeholder="Nombre (Ej: Miguel)" value="Miguel Ángel (Supervisión)" class="bg-slate-900 text-xs text-white p-2.5 rounded-lg border border-slate-700 outline-none">
+                    <input type="text" id="coord1-tel" placeholder="WhatsApp (Ej: 34600112233)" value="34600112233" class="bg-slate-900 text-xs text-white p-2.5 rounded-lg border border-slate-700 outline-none">
+                </div>
+                <input type="email" id="coord1-email" placeholder="Correo (Ej: miguel@empresa.com)" value="miguel@empresa.com" class="w-full bg-slate-900 text-xs text-white p-2.5 rounded-lg border border-slate-700 outline-none">
+            </div>
+
+            <!-- Coordinador 2 -->
+            <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                <h4 class="text-xs font-bold text-orange-400 uppercase">Coordinador 2</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input type="text" id="coord2-nombre" placeholder="Nombre (Ej: Roberto)" value="Roberto Ruiz (Oficina)" class="bg-slate-900 text-xs text-white p-2.5 rounded-lg border border-slate-700 outline-none">
+                    <input type="text" id="coord2-tel" placeholder="WhatsApp (Ej: 34699887766)" value="34699887766" class="bg-slate-900 text-xs text-white p-2.5 rounded-lg border border-slate-700 outline-none">
+                </div>
+                <input type="email" id="coord2-email" placeholder="Correo (Ej: roberto@empresa.com)" value="roberto@empresa.com" class="w-full bg-slate-900 text-xs text-white p-2.5 rounded-lg border border-slate-700 outline-none">
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button onclick="cerrarModalCoordinadores()" class="flex-1 py-3 bg-slate-800 text-slate-300 font-bold rounded-xl border border-slate-700">Cancelar</button>
+                <button onclick="guardarCoordinadores()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-md">Guardar Coordinadores</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: CÓMO COMPARTIR E INSTALAR LA APP GRATIS -->
+    <div id="modal-compartir" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-mobile-screen-button text-orange-500"></i> ¿Cómo compartir con operarios?
+                </h3>
+                <button onclick="cerrarModalCompartir()" class="text-slate-400 hover:text-white text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3 text-xs text-slate-300">
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                    <b class="text-orange-400 block text-sm">1. Enviar el enlace por WhatsApp</b>
+                    <p>Copia el enlace de esta página web y envíaselo al móvil de tus trabajadores por WhatsApp.</p>
+                </div>
+
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                    <b class="text-orange-400 block text-sm">2. Guardar en Pantalla de Inicio (Como App)</b>
+                    <p>En el móvil del trabajador, al abrir el enlace:</p>
+                    <ul class="list-disc list-inside space-y-1 text-slate-400 mt-1">
+                        <li><b>En Android (Chrome):</b> Pulsar en los 3 puntos arriba y seleccionar <i>"Añadir a pantalla de inicio"</i>.</li>
+                        <li><b>En iPhone (Safari):</b> Pulsar el botón Compartir <i class="fa-solid fa-share-from-square"></i> y seleccionar <i>"Añadir a la pantalla de inicio"</i>.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button onclick="copiarEnlaceApp()" class="w-full py-3.5 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl shadow-md flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-copy"></i>
+                <span>Copiar Enlace para WhatsApp</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- NOTIFICACIÓN TOAST -->
+    <div id="toast-msg" class="fixed top-5 right-5 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2 transition-all duration-300 translate-y-[-150%] opacity-0 z-50">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-text" class="text-sm font-bold">Guardado correctamente</span>
+    </div>
+
+    <!-- JAVASCRIPT CON LÓGICA COMPLETA -->
+    <script>
+        // --- ESTADO ---
+        let obraActual = 'Nave Logística Central';
+        let obraTerminada = false;
+        let usuarioActualId = null; // ID del usuario identificado actualmente
+
+        let coordinadores = {
+            coord1: { nombre: 'Miguel Ángel (Supervisión)', tel: '34600112233', email: 'miguel@empresa.com' },
+            coord2: { nombre: 'Roberto Ruiz (Oficina)', tel: '34699887766', email: 'roberto@empresa.com' }
+        };
+
+        let sistemasResina = [
+            { id: 'multicapa', nombre: 'Multicapa Epoxy Monocolor', desc: 'Espesor 1.5 - 3 mm' },
+            { id: 'autonivelante', nombre: 'Autonivelante Epoxy', desc: 'Liso de alto acabado (2-3 mm)' },
+            { id: 'cuarzo', nombre: 'Multicapa Cuarzo Color', desc: 'Decorativo / Antideslizante' },
+            { id: 'pintura', nombre: 'Pintura Epoxi / PU', desc: '2 Capas a rodillo (Capas finas)' },
+            { id: 'pucement', nombre: 'Poliuretano Cementoso', desc: 'Heavy Duty / Térmico (3-9 mm)' },
+            { id: 'morteroseco', nombre: 'Mortero Seco de Resina', desc: 'Regleado y Fratasado' },
+            { id: 'comfort', nombre: 'Comfort Floor PU', desc: 'Flexible y Acústico' }
+        ];
+
+        let sistemaSeleccionado = 'multicapa';
+
+        let capasResina = [
+            { id: 'prep', nombre: '1. Prep. Soporte / Granallado', icon: 'fa-dharmachakra' },
+            { id: 'imp', nombre: '2. Imprimación Epoxi', icon: 'fa-fill-drip' },
+            { id: 'multi', nombre: '3. Capa Multicapa / Cargas', icon: 'fa-layer-group' },
+            { id: 'auto', nombre: '4. Autonivelante / Llana', icon: 'fa-fill' },
+            { id: 'sell', nombre: '5. Sellado PU / Topcoat', icon: 'fa-paint-roller' }
+        ];
+
+        let capaSeleccionada = 'imp';
+
+        let operarios = [
+            { id: 1, nombre: 'Juan Pérez', rol: 'Encargado Resinero', estado: 'presente', horas: 8 },
+            { id: 2, nombre: 'Manolo Rivas', rol: 'Oficial Mezclas / Llana', estado: 'presente', horas: 8 },
+            { id: 3, nombre: 'David Serrano', rol: 'Maquinista Granalladora', estado: 'presente', horas: 9 },
+            { id: 4, nombre: 'Antonio López', rol: 'Peón / Preparación', estado: 'media', horas: 4 },
+            { id: 5, nombre: 'Javier Morales', rol: 'Aplicador Topcoat', estado: 'vacaciones', horas: 0 }
+        ];
+
+        let materiales = [
+            { id: 'resina_a', nombre: 'Resina Epoxi Comp. A', unidad: 'kg', consumo: 350, teoricoPorM2: 0.8 },
+            { id: 'resina_b', nombre: 'Endurecedor Comp. B', unidad: 'kg', consumo: 116, teoricoPorM2: 0.26 },
+            { id: 'arido', nombre: 'Árido Cuarzo 0.1-0.3mm', unidad: 'sacos (25kg)', consumo: 18, teoricoPorM2: 1.0 },
+            { id: 'topcoat', nombre: 'Sellado Poliuretano PU', unidad: 'kg', consumo: 0, teoricoPorM2: 0.15 },
+            { id: 'disolvente', nombre: 'Disolvente Limpieza Epoxy', unidad: 'litros', consumo: 15, teoricoPorM2: 0.03 },
+            { id: 'rodillos', nombre: 'Rodillos / Hojas Lijadora', unidad: 'uds', consumo: 3, teoricoPorM2: 0 }
+        ];
+
+        let historialPartes = [];
+
+        // --- INICIALIZACIÓN ---
+        window.onload = function() {
+            cargarDatosLocalStorage();
+            poblarSelectLogin();
+            
+            // Mostrar pantalla de login / selección inicial
+            document.getElementById('overlay-login').classList.remove('hidden');
+
+            renderOperarios();
+            renderSistemas();
+            renderCapas();
+            renderMateriales();
+            calcularProgresoAvance();
+            actualizarResumenVista();
+            actualizarTextoCoordinadoresResumen();
+        };
+
+        // --- PANTALLA INICIAL DE IDENTIFICACIÓN ---
+        function poblarSelectLogin() {
+            const select = document.getElementById('select-usuario-login');
+            select.innerHTML = '';
+            operarios.forEach(op => {
+                const option = document.createElement('option');
+                option.value = op.id;
+                option.innerText = `${op.nombre} (${op.rol})`;
+                select.appendChild(option);
+            });
+        }
+
+        function confirmarIdentidad() {
+            const selectedId = parseInt(document.getElementById('select-usuario-login').value);
+            const userObj = operarios.find(o => o.id === selectedId);
+
+            if (userObj) {
+                usuarioActualId = selectedId;
+                document.getElementById('lbl-usuario-actual').innerText = userObj.nombre;
+                document.getElementById('overlay-login').classList.add('hidden');
+                mostrarToast(`Hola ${userObj.nombre}, sesión iniciada`);
+                renderOperarios();
+                actualizarResumenVista();
+            }
+        }
+
+        function cambiarUsuarioModal() {
+            poblarSelectLogin();
+            if (usuarioActualId) {
+                document.getElementById('select-usuario-login').value = usuarioActualId;
+            }
+            document.getElementById('overlay-login').classList.remove('hidden');
+        }
+
+        // --- NAVEGACIÓN ENTRE PESTAÑAS ---
+        function cambiarPestana(pestanaId) {
+            const secciones = ['asistencia', 'avance', 'materiales', 'resumen'];
+            secciones.forEach(sec => {
+                document.getElementById(`sec-${sec}`).classList.add('hidden');
+                
+                const btnNav = document.getElementById(`nav-${sec}`);
+                btnNav.classList.remove('bg-orange-600', 'text-white', 'shadow-md');
+                btnNav.classList.add('text-slate-400');
+                
+                const bNav = document.getElementById(`bnav-${sec}`);
+                if (bNav) {
+                    bNav.classList.remove('text-orange-500');
+                    bNav.classList.add('text-slate-400');
+                }
+            });
+
+            document.getElementById(`sec-${pestanaId}`).classList.remove('hidden');
+            
+            const btnActivo = document.getElementById(`nav-${pestanaId}`);
+            btnActivo.classList.add('bg-orange-600', 'text-white', 'shadow-md');
+            btnActivo.classList.remove('text-slate-400');
+
+            const bNavActivo = document.getElementById(`bnav-${pestanaId}`);
+            if (bNavActivo) {
+                bNavActivo.classList.add('text-orange-500');
+                bNavActivo.classList.remove('text-slate-400');
+            }
+
+            if (pestanaId === 'resumen') {
+                actualizarResumenVista();
+            }
+        }
+
+        // --- MARCAR OBRA COMO TERMINADA ---
+        function toggleObraTerminada() {
+            obraTerminada = !obraTerminada;
+            actualizarEstadoVisualObra();
+            guardarDatosLocalStorage();
+            mostrarToast(obraTerminada ? 'Obra marcada como FINALIZADA' : 'Obra reactivada');
+        }
+
+        function actualizarEstadoVisualObra() {
+            const badge = document.getElementById('status-obra-badge');
+            const txtEstado = document.getElementById('txt-estado-obra');
+            const btn = document.getElementById('btn-finalizar-obra');
+            const lblBtn = document.getElementById('lbl-btn-finalizar');
+            const lblInfo = document.getElementById('lbl-estado-info');
+
+            if (obraTerminada) {
+                badge.className = 'w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500 text-emerald-400 flex items-center justify-center text-2xl font-bold animate-pulse';
+                badge.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                txtEstado.className = 'text-xs font-extrabold px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+                txtEstado.innerText = 'OBRA TERMINADA';
+                btn.className = 'w-full sm:w-auto px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-extrabold rounded-xl border border-slate-700 shadow-lg flex items-center justify-center space-x-2 text-sm transition';
+                lblBtn.innerText = 'REABRIR OBRA EN EJECUCIÓN';
+                lblInfo.innerText = 'FINALIZADA 100%';
+                lblInfo.className = 'text-emerald-400 font-bold';
+            } else {
+                badge.className = 'w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl font-bold';
+                badge.innerHTML = '<i class="fa-solid fa-person-digging"></i>';
+                txtEstado.className = 'text-xs font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30';
+                txtEstado.innerText = 'EN EJECUCIÓN';
+                btn.className = 'w-full sm:w-auto px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl shadow-lg flex items-center justify-center space-x-2 text-sm transition touch-manipulate';
+                lblBtn.innerText = 'MARCAR OBRA COMO TERMINADA';
+                lblInfo.innerText = 'En Progreso Normal';
+                lblInfo.className = 'text-white font-bold';
+            }
+
+            document.getElementById('title-obra-estado').innerText = obraActual;
+        }
+
+        // --- SECCIÓN SISTEMAS Y CAPAS ---
+        function renderSistemas() {
+            const container = document.getElementById('selector-sistemas');
+            container.innerHTML = '';
+
+            sistemasResina.forEach(s => {
+                const esActivo = s.id === sistemaSeleccionado;
+                const btn = document.createElement('button');
+                btn.onclick = () => { sistemaSeleccionado = s.id; renderSistemas(); guardarDatosLocalStorage(); };
+                btn.className = `p-3 rounded-xl border text-left flex flex-col justify-between transition-all touch-manipulate ${
+                    esActivo 
+                    ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white border-orange-400 shadow-md font-bold' 
+                    : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                }`;
+                btn.innerHTML = `
+                    <span class="text-xs font-bold leading-snug">${s.nombre}</span>
+                    <span class="text-[10px] ${esActivo ? 'text-orange-100' : 'text-slate-500'} mt-1">${s.desc}</span>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function renderCapas() {
+            const container = document.getElementById('selector-capas');
+            container.innerHTML = '';
+
+            capasResina.forEach(c => {
+                const esActiva = c.id === capaSeleccionada;
+                const btn = document.createElement('button');
+                btn.onclick = () => { capaSeleccionada = c.id; renderCapas(); guardarDatosLocalStorage(); };
+                btn.className = `p-3 rounded-xl border text-left flex flex-col justify-between h-20 transition-all touch-manipulate ${
+                    esActiva 
+                    ? 'bg-slate-800 text-orange-400 border-orange-500 shadow-md' 
+                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                }`;
+                btn.innerHTML = `
+                    <i class="fa-solid ${c.icon} text-lg ${esActiva ? 'text-orange-400' : 'text-slate-500'}"></i>
+                    <span class="text-xs font-bold leading-tight">${c.nombre}</span>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        // --- ASISTENCIA DE OPERARIOS CON NUEVA OPCIÓN 'VACACIONES' Y RESTRICCIÓN DE SEGURIDAD ---
+        function renderOperarios() {
+            const container = document.getElementById('grid-operarios');
+            container.innerHTML = '';
+
+            operarios.forEach(op => {
+                let badgeColor = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+                let estadoTexto = 'Presente';
+
+                if (op.estado === 'ausente') {
+                    badgeColor = 'bg-red-500/20 text-red-400 border-red-500/30';
+                    estadoTexto = 'Ausente';
+                } else if (op.estado === 'media') {
+                    badgeColor = 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+                    estadoTexto = '1/2 Día';
+                } else if (op.estado === 'vacaciones') {
+                    badgeColor = 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+                    estadoTexto = 'Vacaciones';
+                }
+
+                const esUsuarioActual = op.id === usuarioActualId;
+
+                const card = document.createElement('div');
+                card.className = `bg-slate-900 border ${esUsuarioActual ? 'border-orange-500 ring-1 ring-orange-500/50' : 'border-slate-800'} rounded-2xl p-4 space-y-3 relative`;
+                
+                card.innerHTML = `
+                    ${esUsuarioActual ? '<span class="absolute -top-2.5 right-4 bg-orange-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">Tú (Identificado)</span>' : ''}
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl ${esUsuarioActual ? 'bg-orange-600 text-white' : 'bg-slate-800 text-orange-400'} border border-slate-700 flex items-center justify-center font-bold">
+                                ${op.nombre.split(' ').map(n=>n[0]).join('')}
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white text-sm">${op.nombre}</h3>
+                                <p class="text-[11px] text-slate-400">${op.rol}</p>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-lg border ${badgeColor}">${estadoTexto}</span>
+                    </div>
+
+                    <!-- BOTONES TÁCTILES CON 4 ESTADOS (INCLUYENDO VACACIONES) -->
+                    <div class="grid grid-cols-4 gap-1">
+                        <button onclick="cambiarEstadoOperario(${op.id}, 'presente')" class="h-9 rounded-xl font-bold text-[11px] flex items-center justify-center space-x-1 ${op.estado==='presente' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-950 text-slate-400 border border-slate-800'}">
+                            <i class="fa-solid fa-check text-xs"></i>
+                            <span>OK</span>
+                        </button>
+                        <button onclick="cambiarEstadoOperario(${op.id}, 'media')" class="h-9 rounded-xl font-bold text-[11px] flex items-center justify-center space-x-1 ${op.estado==='media' ? 'bg-amber-600 text-white shadow-md' : 'bg-slate-950 text-slate-400 border border-slate-800'}">
+                            <i class="fa-solid fa-clock text-xs"></i>
+                            <span>1/2 D</span>
+                        </button>
+                        <button onclick="cambiarEstadoOperario(${op.id}, 'vacaciones')" class="h-9 rounded-xl font-bold text-[11px] flex items-center justify-center space-x-1 ${op.estado==='vacaciones' ? 'bg-purple-600 text-white shadow-md' : 'bg-slate-950 text-slate-400 border border-slate-800'}">
+                            <i class="fa-solid fa-umbrella-beach text-xs"></i>
+                            <span>Vac</span>
+                        </button>
+                        <button onclick="cambiarEstadoOperario(${op.id}, 'ausente')" class="h-9 rounded-xl font-bold text-[11px] flex items-center justify-center space-x-1 ${op.estado==='ausente' ? 'bg-red-600 text-white shadow-md' : 'bg-slate-950 text-slate-400 border border-slate-800'}">
+                            <i class="fa-solid fa-xmark text-xs"></i>
+                            <span>Baja</span>
+                        </button>
+                    </div>
+
+                    <div class="flex justify-between items-center bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+                        <span class="text-slate-400 font-medium">Horas Fichadas:</span>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="modificarHoras(${op.id}, -1)" class="w-7 h-7 rounded bg-slate-800 text-slate-200 font-bold flex items-center justify-center active:bg-slate-700">-</button>
+                            <span class="font-black text-white text-sm w-5 text-center">${op.horas}h</span>
+                            <button onclick="modificarHoras(${op.id}, 1)" class="w-7 h-7 rounded bg-slate-800 text-slate-200 font-bold flex items-center justify-center active:bg-slate-700">+</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function cambiarEstadoOperario(id, nuevoEstado) {
+            const op = operarios.find(o => o.id === id);
+            if (op) {
+                op.estado = nuevoEstado;
+                if (nuevoEstado === 'presente') op.horas = 8;
+                if (nuevoEstado === 'media') op.horas = 4;
+                if (nuevoEstado === 'ausente' || nuevoEstado === 'vacaciones') op.horas = 0;
+                renderOperarios();
+                guardarDatosLocalStorage();
+            }
+        }
+
+        function modificarHoras(id, delta) {
+            const op = operarios.find(o => o.id === id);
+            if (op) {
+                op.horas = Math.max(0, op.horas + delta);
+                renderOperarios();
+                guardarDatosLocalStorage();
+            }
+        }
+
+        // --- CÁLCULO PROGRESO AVANCE ---
+        function calcularProgresoAvance() {
+            const plan = parseFloat(document.getElementById('m2-plan').value) || 1;
+            const ejec = parseFloat(document.getElementById('m2-ejec').value) || 0;
+
+            const pct = Math.min(200, Math.round((ejec / plan) * 1000) / 10);
+            document.getElementById('txt-cumplimiento-pct').innerText = `${pct}%`;
+            document.getElementById('bar-cumplimiento').style.width = `${Math.min(100, pct)}%`;
+            document.getElementById('lbl-m2-materiales').innerText = ejec;
+
+            renderMateriales();
+        }
+
+        // --- MATERIALES ---
+        function renderMateriales() {
+            const container = document.getElementById('grid-materiales');
+            container.innerHTML = '';
+
+            const m2Ejecutados = parseFloat(document.getElementById('m2-ejec').value) || 1;
+
+            materiales.forEach(mat => {
+                const rendimientoReal = Math.round((mat.consumo / m2Ejecutados) * 100) / 100;
+
+                const card = document.createElement('div');
+                card.className = 'bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-bold text-white text-sm">${mat.nombre}</h4>
+                            <span class="text-[11px] text-slate-400">Unidad: ${mat.unidad}</span>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-orange-400 border border-slate-700">
+                            ${rendimientoReal} ${mat.unidad}/$m^2$
+                        </span>
+                    </div>
+
+                    <div class="flex items-center space-x-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
+                        <button onclick="modificarMaterial('${mat.id}', -10)" class="h-9 px-2.5 rounded-lg bg-slate-800 text-white font-bold active:bg-slate-700 text-xs">-10</button>
+                        <button onclick="modificarMaterial('${mat.id}', -1)" class="h-9 px-2.5 rounded-lg bg-slate-800 text-white font-bold active:bg-slate-700 text-xs">-1</button>
+                        <input type="number" value="${mat.consumo}" onchange="actualizarMaterialInput('${mat.id}', this.value)" class="w-full text-center bg-transparent text-lg font-black text-orange-400 outline-none">
+                        <button onclick="modificarMaterial('${mat.id}', 1)" class="h-9 px-2.5 rounded-lg bg-slate-800 text-white font-bold active:bg-slate-700 text-xs">+1</button>
+                        <button onclick="modificarMaterial('${mat.id}', 10)" class="h-9 px-2.5 rounded-lg bg-slate-800 text-white font-bold active:bg-slate-700 text-xs">+10</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function modificarMaterial(id, delta) {
+            const mat = materiales.find(m => m.id === id);
+            if (mat) {
+                mat.consumo = Math.max(0, mat.consumo + delta);
+                renderMateriales();
+                guardarDatosLocalStorage();
+            }
+        }
+
+        function actualizarMaterialInput(id, valor) {
+            const mat = materiales.find(m => m.id === id);
+            if (mat) {
+                mat.consumo = Math.max(0, parseFloat(valor) || 0);
+                renderMateriales();
+                guardarDatosLocalStorage();
+            }
+        }
+
+        // --- ACTUALIZAR VISTA PREVIA DEL PARTE ---
+        function actualizarResumenVista() {
+            document.getElementById('resumen-titulo-obra').innerText = `${obraActual} ${obraTerminada ? '(OBRA TERMINADA)' : ''}`;
+            document.getElementById('resumen-fecha').innerText = `Fecha: ${new Date().toLocaleDateString('es-ES')}`;
+
+            const emisor = operarios.find(o => o.id === usuarioActualId);
+            document.getElementById('resumen-emisor-nombre').innerText = emisor ? emisor.nombre : 'No especificado';
+
+            const sisObj = sistemasResina.find(s => s.id === sistemaSeleccionado);
+            document.getElementById('resumen-sistema-nombre').innerText = sisObj ? sisObj.nombre : '-';
+
+            const capaObj = capasResina.find(c => c.id === capaSeleccionada);
+            document.getElementById('resumen-capa-nombre').innerText = capaObj ? capaObj.nombre : '-';
+
+            // Operarios (Reflejando Vacaciones también)
+            const containerOp = document.getElementById('resumen-asistencia-lista');
+            containerOp.innerHTML = '';
+            operarios.forEach(o => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between border-b border-slate-900 pb-1';
+                let estTxt = `${o.horas}h`;
+                if (o.estado === 'ausente') estTxt = '<span class="text-red-400 font-bold">Baja / Ausente</span>';
+                if (o.estado === 'vacaciones') estTxt = '<span class="text-purple-400 font-bold">Vacaciones</span>';
+                
+                item.innerHTML = `<span>• ${o.nombre}</span><span class="font-bold text-orange-400">${estTxt}</span>`;
+                containerOp.appendChild(item);
+            });
+
+            // Metros
+            const plan = document.getElementById('m2-plan').value;
+            const ejec = document.getElementById('m2-ejec').value;
+            const pct = document.getElementById('txt-cumplimiento-pct').innerText;
+            document.getElementById('resumen-m2-ejec').innerText = `${ejec} m²`;
+            document.getElementById('resumen-m2-plan').innerText = `${plan} m²`;
+            document.getElementById('resumen-pct-cump').innerText = `Cumplimiento: ${pct}`;
+
+            // Materiales
+            const containerMat = document.getElementById('resumen-materiales-lista');
+            containerMat.innerHTML = '';
+            materiales.filter(m => m.consumo > 0).forEach(m => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between border-b border-slate-900 pb-1';
+                item.innerHTML = `<span>• ${m.nombre}</span><span class="font-bold text-orange-400">${m.consumo} ${m.unidad}</span>`;
+                containerMat.appendChild(item);
+            });
+
+            actualizarEstadoVisualObra();
+            renderHistorialPartes();
+        }
+
+        // --- SISTEMA DE ENVÍO AUTOMÁTICO A 2 COORDINADORES ---
+        function generarTextoMensajeParte() {
+            const fecha = new Date().toLocaleDateString('es-ES');
+            const sisObj = sistemasResina.find(s => s.id === sistemaSeleccionado)?.nombre || '';
+            const capaObj = capasResina.find(c => c.id === capaSeleccionada)?.nombre || '';
+            const ejec = document.getElementById('m2-ejec').value;
+            const plan = document.getElementById('m2-plan').value;
+            const pct = document.getElementById('txt-cumplimiento-pct').innerText;
+            const obs = document.getElementById('txt-observaciones').value;
+            const emisor = operarios.find(o => o.id === usuarioActualId)?.nombre || 'Aplicador';
+            const estadoTexto = obraTerminada ? '🏁 OBRA MARCADA COMO TERMINADA 100%' : '🚧 Obra En Ejecución';
+
+            let msg = `📌 *PARTE DIARIO DE PAVIMENTACIÓN*\n`;
+            msg += `👤 *Realizado por:* ${emisor}\n`;
+            msg += `🏗 *Obra:* ${obraActual}\n`;
+            msg += `📅 *Fecha:* ${fecha}\n`;
+            msg += `🏷 *Estado:* ${estadoTexto}\n`;
+            msg += `🧪 *Sistema:* ${sisObj}\n`;
+            msg += `🥞 *Capa Hoy:* ${capaObj}\n\n`;
+            
+            msg += `📐 *AVANCE M²:*\n`;
+            msg += `- Ejecutado hoy: *${ejec} m²* (Objetivo: ${plan} m²)\n`;
+            msg += `- Cumplimiento: *${pct}*\n\n`;
+
+            msg += `👥 *EQUIPO / ASISTENCIA:*\n`;
+            operarios.forEach(o => {
+                let st = `${o.horas}h`;
+                if (o.estado === 'vacaciones') st = 'VACACIONES';
+                if (o.estado === 'ausente') st = 'AUSENTE';
+                msg += `- ${o.nombre} (${o.rol}): *${st}*\n`;
+            });
+            msg += `\n`;
+
+            msg += `📦 *MATERIALES CONSUMIDOS:*\n`;
+            materiales.filter(m => m.consumo > 0).forEach(m => {
+                msg += `- ${m.nombre}: ${m.consumo} ${m.unidad}\n`;
+            });
+            msg += `\n`;
+
+            if (obs) {
+                msg += `📝 *Observaciones:* ${obs}\n`;
+            }
+
+            return msg;
+        }
+
+        function enviarReporteA2CoordinadoresWhatsApp() {
+            const texto = encodeURIComponent(generarTextoMensajeParte());
+            
+            // Abre primera ventana WhatsApp a Coordinador 1 y luego alerta / enlace para Coordinador 2
+            const url1 = `https://api.whatsapp.com/send?phone=${coordinadores.coord1.tel}&text=${texto}`;
+            const url2 = `https://api.whatsapp.com/send?phone=${coordinadores.coord2.tel}&text=${texto}`;
+
+            window.open(url1, '_blank');
+
+            setTimeout(() => {
+                if (confirm(`Parte enviado a ${coordinadores.coord1.nombre}. ¿Pulsar OK para enviar ahora a ${coordinadores.coord2.nombre}?`)) {
+                    window.open(url2, '_blank');
+                }
+            }, 1000);
+        }
+
+        function enviarReporteEmail() {
+            const asunto = encodeURIComponent(`Parte Diario Pavimento - ${obraActual} (${new Date().toLocaleDateString('es-ES')})`);
+            const cuerpo = encodeURIComponent(generarTextoMensajeParte());
+            const destinatarios = `${coordinadores.coord1.email},${coordinadores.coord2.email}`;
+
+            window.location.href = `mailto:${destinatarios}?subject=${asunto}&body=${cuerpo}`;
+        }
+
+        // --- GESTIÓN DE MODALES ---
+        function abrirModalCoordinadores() {
+            document.getElementById('coord1-nombre').value = coordinadores.coord1.nombre;
+            document.getElementById('coord1-tel').value = coordinadores.coord1.tel;
+            document.getElementById('coord1-email').value = coordinadores.coord1.email;
+
+            document.getElementById('coord2-nombre').value = coordinadores.coord2.nombre;
+            document.getElementById('coord2-tel').value = coordinadores.coord2.tel;
+            document.getElementById('coord2-email').value = coordinadores.coord2.email;
+
+            document.getElementById('modal-coordinadores').classList.remove('hidden');
+        }
+
+        function cerrarModalCoordinadores() {
+            document.getElementById('modal-coordinadores').classList.add('hidden');
+        }
+
+        function guardarCoordinadores() {
+            coordinadores.coord1.nombre = document.getElementById('coord1-nombre').value;
+            coordinadores.coord1.tel = document.getElementById('coord1-tel').value;
+            coordinadores.coord1.email = document.getElementById('coord1-email').value;
+
+            coordinadores.coord2.nombre = document.getElementById('coord2-nombre').value;
+            coordinadores.coord2.tel = document.getElementById('coord2-tel').value;
+            coordinadores.coord2.email = document.getElementById('coord2-email').value;
+
+            actualizarTextoCoordinadoresResumen();
+            guardarDatosLocalStorage();
+            cerrarModalCoordinadores();
+            mostrarToast('Datos de Coordinadores actualizados');
+        }
+
+        function actualizarTextoCoordinadoresResumen() {
+            document.getElementById('txt-coordinadores-config-resumen').innerText = 
+                `Coordinador 1: ${coordinadores.coord1.nombre || 'No asignado'} | Coordinador 2: ${coordinadores.coord2.nombre || 'No asignado'}`;
+        }
+
+        function abrirModalCompartir() {
+            document.getElementById('modal-compartir').classList.remove('hidden');
+        }
+
+        function cerrarModalCompartir() {
+            document.getElementById('modal-compartir').classList.add('hidden');
+        }
+
+        function copiarEnlaceApp() {
+            const dummy = document.createElement('input');
+            document.body.appendChild(dummy);
+            dummy.value = window.location.href;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            mostrarToast('¡Enlace copiado! Pégalo en WhatsApp');
+            cerrarModalCompartir();
+        }
+
+        // --- GESTIÓN OPERARIOS MODAL ---
+        function agregarOperarioModal() { document.getElementById('modal-operario').classList.remove('hidden'); }
+        function cerrarOperarioModal() { document.getElementById('modal-operario').classList.add('hidden'); }
+
+        function guardarNuevoOperario() {
+            const nombre = document.getElementById('nuevo-op-nombre').value.trim();
+            const rol = document.getElementById('nuevo-op-rol').value;
+
+            if (!nombre) {
+                mostrarToast('Escribe el nombre del trabajador');
+                return;
+            }
+
+            const nuevoOp = {
+                id: Date.now(),
+                nombre: nombre,
+                rol: rol,
+                estado: 'presente',
+                horas: 8
+            };
+
+            operarios.push(nuevoOp);
+
+            document.getElementById('nuevo-op-nombre').value = '';
+            cerrarOperarioModal();
+            poblarSelectLogin();
+            renderOperarios();
+            guardarDatosLocalStorage();
+            mostrarToast('Trabajador registrado');
+        }
+
+        // --- LOCAL STORAGE Y AUXILIARES ---
+        function guardarParteDiario() {
+            const hoy = new Date().toLocaleDateString('es-ES');
+            const emisor = operarios.find(o => o.id === usuarioActualId)?.nombre || 'Aplicador';
+
+            const parte = {
+                id: Date.now(),
+                fecha: hoy,
+                emisor: emisor,
+                obra: obraActual,
+                terminada: obraTerminada,
+                sistema: sistemasResina.find(s => s.id === sistemaSeleccionado)?.nombre,
+                capa: capasResina.find(c => c.id === capaSeleccionada)?.nombre,
+                m2Ejec: document.getElementById('m2-ejec').value,
+                m2Plan: document.getElementById('m2-plan').value,
+                operarios: JSON.parse(JSON.stringify(operarios)),
+                materiales: JSON.parse(JSON.stringify(materiales))
+            };
+
+            historialPartes.unshift(parte);
+            guardarDatosLocalStorage();
+            renderHistorialPartes();
+            mostrarToast('Parte guardado en el historial');
+        }
+
+        function renderHistorialPartes() {
+            const container = document.getElementById('lista-historial-partes');
+            document.getElementById('badge-total-partes').innerText = `${historialPartes.length} Registros`;
+            container.innerHTML = '';
+
+            if (historialPartes.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-slate-500 text-xs">Sin registros guardados.</div>`;
+                return;
+            }
+
+            historialPartes.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-950 border border-slate-800 rounded-xl p-4 flex justify-between items-center';
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-black text-white text-sm">${p.fecha}</span>
+                            <span class="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded font-bold">${p.obra}</span>
+                            ${p.terminada ? '<span class="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold">TERMINADA</span>' : ''}
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">Por: <b>${p.emisor || 'Aplicador'}</b> — ${p.sistema} — ${p.capa} — <b>${p.m2Ejec} m²</b></p>
+                    </div>
+                    <button onclick="eliminarParte(${p.id})" class="px-3 py-1.5 bg-slate-900 hover:bg-red-600/20 text-red-400 rounded-lg text-xs font-semibold border border-slate-800 transition">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function eliminarParte(id) {
+            historialPartes = historialPartes.filter(p => p.id !== id);
+            guardarDatosLocalStorage();
+            renderHistorialPartes();
+            mostrarToast('Registro eliminado');
+        }
+
+        function cambiarObra(nuevaObra) {
+            if (nuevaObra === '+ Crear Nueva Obra') {
+                const nombre = prompt('Nombre de la nueva obra:');
+                if (nombre) {
+                    obraActual = nombre;
+                    obraTerminada = false;
+                    const select = document.getElementById('select-obra');
+                    const opt = document.createElement('option');
+                    opt.value = nombre;
+                    opt.innerText = nombre;
+                    opt.selected = true;
+                    select.appendChild(opt);
+                } else {
+                    document.getElementById('select-obra').value = obraActual;
+                }
+            } else {
+                obraActual = nuevaObra;
+            }
+            actualizarResumenVista();
+        }
+
+        function imprimirParte() { window.print(); }
+
+        function guardarDatosLocalStorage() {
+            const data = { operarios, capaSeleccionada, sistemaSeleccionado, materiales, historialPartes, obraActual, obraTerminada, coordinadores, usuarioActualId };
+            localStorage.setItem('resincontrol_pro_data', JSON.stringify(data));
+        }
+
+        function cargarDatosLocalStorage() {
+            const raw = localStorage.getItem('resincontrol_pro_data');
+            if (raw) {
+                try {
+                    const data = JSON.parse(raw);
+                    if (data.operarios) operarios = data.operarios;
+                    if (data.capaSeleccionada) capaSeleccionada = data.capaSeleccionada;
+                    if (data.sistemaSeleccionado) sistemaSeleccionado = data.sistemaSeleccionado;
+                    if (data.materiales) materiales = data.materiales;
+                    if (data.historialPartes) historialPartes = data.historialPartes;
+                    if (data.obraActual) obraActual = data.obraActual;
+                    if (data.obraTerminada !== undefined) obraTerminada = data.obraTerminada;
+                    if (data.coordinadores) coordinadores = data.coordinadores;
+                    if (data.usuarioActualId) usuarioActualId = data.usuarioActualId;
+                } catch (e) {
+                    console.error('Error al cargar LocalStorage', e);
+                }
+            }
+        }
+
+        function mostrarToast(mensaje) {
+            const toast = document.getElementById('toast-msg');
+            document.getElementById('toast-text').innerText = mensaje;
+            toast.classList.remove('translate-y-[-150%]', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-150%]', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
